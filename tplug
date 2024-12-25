@@ -8,6 +8,8 @@ HOME="/data/data/com.termux/files/home"
 USR_PREFIX="/data/data/com.termux/files/usr"
 LOCAL_PLUGIN_DIR="$HOME/plugins"
 SERVICE_DIR="$USR_PREFIX/var/service"
+LOGS_DIR="$USR_PREFIX/var/log/sv"
+
 
 install_dependencies() {
     PLUGIN_DIR="$1"
@@ -117,9 +119,10 @@ tplug_add_github() {
 # Remove plugin
 tplug_remove() {
     SERVICE_NAME="$1"
+    DELETE_LOGS="$2"
 
     if [ -z "$SERVICE_NAME" ]; then
-        echo "Usage: tplug remove <service_name>"
+        echo "Usage: tplug remove <service_name> [--delete-logs]"
         exit 1
     fi
 
@@ -129,7 +132,7 @@ tplug_remove() {
     fi
 
     echo "Removing service $SERVICE_NAME..."
-    
+
     # Unlink specific symlinks
     if [ -L "$SERVICE_DIR/$SERVICE_NAME/log/run" ]; then
         echo "Unlinking log symlink..."
@@ -138,6 +141,17 @@ tplug_remove() {
 
     # Remove service directory
     rm -rf "$SERVICE_DIR/$SERVICE_NAME"
+
+    # Handle logs
+    if [ "$DELETE_LOGS" = "--delete-logs" ]; then
+        SERVICE_LOGS_DIR="$LOGS_DIR/$SERVICE_NAME/"
+        if [ -d "$SERVICE_LOGS_DIR" ]; then
+            echo "Deleting logs for $SERVICE_NAME..."
+            rm -rf "$SERVICE_LOGS_DIR"
+        fi
+    else
+        echo "Logs for $SERVICE_NAME are preserved at $LOGS_DIR/$SERVICE_NAME/."
+    fi
 
     echo "Service $SERVICE_NAME removed successfully."
 }
