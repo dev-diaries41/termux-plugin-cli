@@ -129,10 +129,19 @@ tplug_remove() {
     fi
 
     echo "Removing service $SERVICE_NAME..."
+    
+    # Unlink specific symlinks
+    if [ -L "$SERVICE_DIR/$SERVICE_NAME/log/run" ]; then
+        echo "Unlinking log symlink..."
+        unlink "$SERVICE_DIR/$SERVICE_NAME/log/run"
+    fi
+
+    # Remove service directory
     rm -rf "$SERVICE_DIR/$SERVICE_NAME"
 
     echo "Service $SERVICE_NAME removed successfully."
 }
+
 
 # Main
 COMMAND="$1"
