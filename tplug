@@ -9,7 +9,6 @@ USR_PREFIX="/data/data/com.termux/files/usr"
 LOCAL_PLUGIN_DIR="$HOME/plugins"
 SERVICE_DIR="$USR_PREFIX/var/service"
 
-# Install dependencies from the plugin.yml
 install_dependencies() {
     PLUGIN_DIR="$1"
 
@@ -17,8 +16,8 @@ install_dependencies() {
     if [ -f "$PLUGIN_DIR/plugin.yml" ]; then
         echo "Found plugin.yml, installing dependencies..."
 
-        # Extract the dependencies names using awk or grep
-        DEPENDENCIES=$(awk '/dependencies:/ {flag=1} flag && /name:/ {print $2} /dependencies:/ && /description:/ {flag=0}' "$PLUGIN_DIR/plugin.yml")
+        # Extract the dependency names from the YAML file
+        DEPENDENCIES=$(grep -oP '(?<=- name: )\S+' "$PLUGIN_DIR/plugin.yml")
 
         for DEP in $DEPENDENCIES; do
             echo "Installing dependency: $DEP"
