@@ -137,7 +137,6 @@ list_installed_plugins() {
         echo "No plugins installed."
     fi
 }
-
 list_available_plugins() {
     local TEMP_DIR
     TEMP_DIR=$(mktemp -d)
@@ -149,13 +148,11 @@ list_available_plugins() {
     }
     cd "$TEMP_DIR" || exit 1
 
-    # Initialize sparse-checkout to only fetch the folder structure
-    git sparse-checkout init --cone
-    git checkout --depth 1  # Only fetch top-level folder names, not their contents
-
+    # List top-level directories (plugins) and exclude .git directory
     echo "Available plugins:"
-    # List the plugin folders (top-level directories)
-    find . -maxdepth 1 -mindepth 1 -type d -exec basename {} \;
+    git ls-tree -d --name-only HEAD | \
+    grep -v '^\.git$' | \
+    xargs -I {} basename {}
 
     rm -rf "$TEMP_DIR"
 }
