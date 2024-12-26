@@ -242,8 +242,8 @@ remove_plugin() {
 check_dependencies
 
 case "$1" in
-    add) add_plugin "$@" ;;
-    install) install_plugin "$@" ;;
+    add) shift; add_plugin "$@" ;;
+    install) shift; install_plugin "$@" ;;
     list-installed) list_installed_plugins ;;
     remove) shift; remove_plugin "$@" ;;
     --help) show_help ;;
