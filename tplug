@@ -44,15 +44,25 @@ install_dependencies() {
     local PLUGIN_DIR="$1"
     if [ -f "$PLUGIN_DIR/plugin.yml" ]; then
         echo "Installing dependencies from plugin.yml..."
+        # Initialize an empty list to hold dependencies
+        local DEP_LIST=""
+
+        # Extract all dependencies from plugin.yml and accumulate them in DEP_LIST
         grep -oP '(?<=- name: )\S+' "$PLUGIN_DIR/plugin.yml" | while read -r DEP; do
-            echo "Installing $DEP..."
-            pkg install -y "$DEP" || {
-                echo -e "${RED}Failed to install dependency: $DEP${NC}"
+            DEP_LIST="$DEP_LIST $DEP"
+        done
+
+        # If there are any dependencies, install them in one go
+        if [ -n "$DEP_LIST" ]; then
+            echo "Installing dependencies: $DEP_LIST"
+            pkg install -y $DEP_LIST || {
+                echo -e "${RED}Failed to install dependencies: $DEP_LIST${NC}"
                 exit 1
             }
-        done
+        fi
     fi
 }
+
 
 # Create and configure the service directory
 create_service() {
@@ -113,7 +123,6 @@ add_plugin() {
     echo -e "${GREEN}Service $SERVICE_NAME added successfully.${NC}"
 }
 
-# Install plugin from repository
 # Install plugin from repository
 install_plugin() {
     local FLAG="$1"
