@@ -2,191 +2,187 @@
 
 # CLI tool to manage Termux plugins
 # Usage: tplug <command> [options]
-# save script to /data/data/com.termux/files/usr/bin/tplug.
 
 HOME="/data/data/com.termux/files/home"
+LOCAL_PLUGIN_DIR="$HOME/.termux-plugins"
 USR_PREFIX="/data/data/com.termux/files/usr"
-LOCAL_PLUGIN_DIR="$HOME/plugins"
 SERVICE_DIR="$USR_PREFIX/var/service"
 LOGS_DIR="$USR_PREFIX/var/log/sv"
+TERMUX_PLUGINS_REPO_URL=${TERMUX_PLUGINS_REPO_URL:-"git@github.com:dev-diaries41/termux-plugins.git"} # Allow override
 
+# Colors for better output
+GREEN="\033[0;32m"
+RED="\033[0;31m"
+NC="\033[0m" # No Color
 
+# Check dependencies
+check_dependencies() {
+    REQUIRED_COMMANDS="git pkg"
+    for cmd in $REQUIRED_COMMANDS; do
+        if ! command -v $cmd >/dev/null; then
+            echo -e "${RED}Error: Required command '$cmd' is not installed.${NC}"
+            exit 1
+        fi
+    done
+}
+
+# Install dependencies listed in plugin.yml
 install_dependencies() {
-    PLUGIN_DIR="$1"
-
-    # Check for plugin.yml file
+    local PLUGIN_DIR="$1"
     if [ -f "$PLUGIN_DIR/plugin.yml" ]; then
-        echo "Found plugin.yml, installing dependencies..."
-
-        # Extract the dependency names from the YAML file
-        DEPENDENCIES=$(grep -oP '(?<=- name: )\S+' "$PLUGIN_DIR/plugin.yml")
-
-        for DEP in $DEPENDENCIES; do
-            echo "Installing dependency: $DEP"
-            pkg install -y "$DEP"
+        echo "Installing dependencies from plugin.yml..."
+        grep -oP '(?<=- name: )\S+' "$PLUGIN_DIR/plugin.yml" | while read -r DEP; do
+            echo "Installing $DEP..."
+            pkg install -y "$DEP" || {
+                echo -e "${RED}Failed to install dependency: $DEP${NC}"
+                exit 1
+            }
         done
-    else
-        echo "No plugin.yml found in $PLUGIN_DIR, skipping dependencies installation."
     fi
 }
 
-# Add local plugin
-tplug_add_local() {
-    SERVICE_NAME="$1"
+# Create and configure the service directory
+create_service() {
+    local SERVICE_NAME="$1"
+    local PLUGIN_DIR="$2"
 
-    if [ -z "$SERVICE_NAME" ]; then
-        echo "Usage: tplug add -l <service_name>"
-        exit 1
-    fi
-
-    PLUGIN_DIR="$LOCAL_PLUGIN_DIR/$SERVICE_NAME"
-
-    if [ ! -d "$PLUGIN_DIR" ]; then
-        echo "Error: Local plugin directory $PLUGIN_DIR does not exist."
-        exit 1
-    fi
-
-    # Install dependencies from plugin.yml (if it exists)
-    install_dependencies "$PLUGIN_DIR"
-
-    mkdir -p "$SERVICE_DIR/$SERVICE_NAME"
     mkdir -p "$SERVICE_DIR/$SERVICE_NAME/log"
-    ln -sf $USR_PREFIX/share/termux-services/svlogger $SERVICE_DIR/$SERVICE_NAME/log/run
+    ln -sf "$USR_PREFIX/share/termux-services/svlogger" "$SERVICE_DIR/$SERVICE_NAME/log/run"
 
-    echo "Copying 'run' script..."
     if [ -f "$PLUGIN_DIR/run" ]; then
         cp "$PLUGIN_DIR/run" "$SERVICE_DIR/$SERVICE_NAME/run"
         chmod 755 "$SERVICE_DIR/$SERVICE_NAME/run"
     else
-        echo "Error: 'run' script not found in $PLUGIN_DIR."
+        echo -e "${RED}Error: 'run' script missing in $PLUGIN_DIR.${NC}"
         exit 1
     fi
 
     if [ -d "$PLUGIN_DIR/plugin" ]; then
-        echo "Copying 'plugin' folder..."
         mkdir -p "$SERVICE_DIR/$SERVICE_NAME/plugin"
         cp -r "$PLUGIN_DIR/plugin/"* "$SERVICE_DIR/$SERVICE_NAME/plugin/"
     fi
-
-    echo "Service $SERVICE_NAME added successfully."
-    echo "Run 'sv-enable $SERVICE_NAME' to enable the service."
 }
 
-# Add GitHub plugin
-tplug_add_github() {
-    REPO_URL="$1"
-    SERVICE_NAME="$2"
+# Install plugin from a specific directory
+install_from_directory() {
+    local PLUGIN_NAME="$1"
+    local SOURCE_DIR="$2"
+    local DEST_DIR="$LOCAL_PLUGIN_DIR/$PLUGIN_NAME"
 
-    if [ -z "$REPO_URL" ] || [ -z "$SERVICE_NAME" ]; then
-        echo "Usage: tplug add -g <repo_url> <service_name>"
+    if [ ! -d "$SOURCE_DIR" ]; then
+        echo -e "${RED}Error: Source directory $SOURCE_DIR does not exist.${NC}"
         exit 1
     fi
 
-    TEMP_DIR=$(mktemp -d)
+    mkdir -p "$DEST_DIR"
+    cp -r "$SOURCE_DIR"/* "$DEST_DIR"
+    add_plugin "$PLUGIN_NAME"
+    echo -e "${GREEN}Service $PLUGIN_NAME installed successfully.${NC}"
+}
 
-    echo "Cloning repository..."
-    git clone "$REPO_URL" "$TEMP_DIR"
+# Add plugin from local directory
+add_plugin() {
+    local SERVICE_NAME="$1"
 
-    if [ ! -f "$TEMP_DIR/run" ]; then
-        echo "Error: The repository does not contain a 'run' script in the root."
-        rm -rf "$TEMP_DIR"
+    if [ -z "$SERVICE_NAME" ]; then
+        echo -e "${RED}Usage: tplug add <service_name>${NC}"
         exit 1
     fi
 
-    # Install dependencies from plugin.yml (if it exists)
-    install_dependencies "$TEMP_DIR"
-
-    mkdir -p "$SERVICE_DIR/$SERVICE_NAME"
-    mkdir -p "$SERVICE_DIR/$SERVICE_NAME/log"
-    ln -sf $USR_PREFIX/share/termux-services/svlogger $SERVICE_DIR/$SERVICE_NAME/log/run
-
-    echo "Copying 'run' script..."
-    cp "$TEMP_DIR/run" "$SERVICE_DIR/$SERVICE_NAME/run"
-    chmod 755 "$SERVICE_DIR/$SERVICE_NAME/run"
-
-    if [ -d "$TEMP_DIR/plugin" ]; then
-        echo "Copying 'plugin' folder..."
-        mkdir -p "$SERVICE_DIR/$SERVICE_NAME/plugin"
-        cp -r "$TEMP_DIR/plugin/"* "$SERVICE_DIR/$SERVICE_NAME/plugin/"
+    local PLUGIN_DIR="$LOCAL_PLUGIN_DIR/$SERVICE_NAME"
+    if [ ! -d "$PLUGIN_DIR" ]; then
+        echo -e "${RED}Error: Plugin directory $PLUGIN_DIR does not exist.${NC}"
+        exit 1
     fi
 
+    install_dependencies "$PLUGIN_DIR"
+    create_service "$SERVICE_NAME" "$PLUGIN_DIR"
+    echo -e "${GREEN}Service $SERVICE_NAME added successfully.${NC}"
+}
+
+# Install plugin from repository
+install_plugin() {
+    local FLAG="$1"
+    local SERVICE_NAME="$2"
+    local TEMP_DIR=$(mktemp -d)
+
+    if [ "$FLAG" = "--all" ]; then
+        echo "Installing all plugins..."
+        git clone "$TERMUX_PLUGINS_REPO_URL" "$TEMP_DIR" || {
+            echo -e "${RED}Failed to clone repository.${NC}"
+            exit 1
+        }
+        for PLUGIN_DIR in "$TEMP_DIR"/*/; do
+            local PLUGIN_NAME=$(basename "$PLUGIN_DIR")
+            install_from_directory "$PLUGIN_NAME" "$PLUGIN_DIR"
+        done
+    elif [ -n "$SERVICE_NAME" ]; then
+        git clone --filter=blob:none --no-checkout "$TERMUX_PLUGINS_REPO_URL" "$TEMP_DIR" || {
+            echo -e "${RED}Failed to clone repository.${NC}"
+            exit 1
+        }
+        cd "$TEMP_DIR" && git sparse-checkout init --cone && git sparse-checkout set "$SERVICE_NAME"
+        install_from_directory "$SERVICE_NAME" "$TEMP_DIR/$SERVICE_NAME"
+    else
+        echo -e "${RED}Usage: tplug install [--all | <service_name>]${NC}"
+        exit 1
+    fi
     rm -rf "$TEMP_DIR"
+}
 
-    echo "Service $SERVICE_NAME added successfully."
-    echo "Run 'sv-enable $SERVICE_NAME' to enable the service."
+# List installed plugins
+list_installed_plugins() {
+    echo "Installed plugins:"
+    if [ -d "$LOCAL_PLUGIN_DIR" ]; then
+        find "$LOCAL_PLUGIN_DIR" -maxdepth 1 -mindepth 1 -type d -exec basename {} \;
+    else
+        echo "No plugins installed."
+    fi
 }
 
 # Remove plugin
-tplug_remove() {
-    SERVICE_NAME="$1"
-    DELETE_LOGS="$2"
+remove_plugin() {
+    local SERVICE_NAME="$1"
+    local DELETE_LOGS="$2"
 
     if [ -z "$SERVICE_NAME" ]; then
-        echo "Usage: tplug remove <service_name> [--delete-logs]"
+        echo -e "${RED}Usage: tplug remove <service_name> [--delete-logs]${NC}"
         exit 1
     fi
 
-    if [ ! -d "$SERVICE_DIR/$SERVICE_NAME" ]; then
-        echo "Error: Service $SERVICE_NAME does not exist."
-        exit 1
+    if [ -d "$SERVICE_DIR/$SERVICE_NAME" ]; then
+        echo "Removing service $SERVICE_NAME..."
+        # Unlink specific symlinks
+        if [ -L "$SERVICE_DIR/$SERVICE_NAME/log/run" ]; then
+            echo "Unlinking log symlink..."
+            unlink "$SERVICE_DIR/$SERVICE_NAME/log/run"
+        fi
+
+        # Remove service directory
+        rm -rf "$SERVICE_DIR/$SERVICE_NAME"
+    else
+        echo -e "${RED}Error: Service $SERVICE_NAME does not exist.${NC}"
     fi
-
-    echo "Removing service $SERVICE_NAME..."
-
-    # Unlink specific symlinks
-    if [ -L "$SERVICE_DIR/$SERVICE_NAME/log/run" ]; then
-        echo "Unlinking log symlink..."
-        unlink "$SERVICE_DIR/$SERVICE_NAME/log/run"
-    fi
-
-    # Remove service directory
-    rm -rf "$SERVICE_DIR/$SERVICE_NAME"
 
     # Handle logs
-    if [ "$DELETE_LOGS" = "--delete-logs" ]; then
-        SERVICE_LOGS_DIR="$LOGS_DIR/$SERVICE_NAME/"
-        if [ -d "$SERVICE_LOGS_DIR" ]; then
-            echo "Deleting logs for $SERVICE_NAME..."
-            rm -rf "$SERVICE_LOGS_DIR"
-        fi
+    if [ "$DELETE_LOGS" = "--delete-logs" ] && [ -d "$LOGS_DIR/$SERVICE_NAME" ]; then
+        echo "Deleting logs for $SERVICE_NAME..."
+        rm -rf "$LOGS_DIR/$SERVICE_NAME"
     else
         echo "Logs for $SERVICE_NAME are preserved at $LOGS_DIR/$SERVICE_NAME/."
     fi
 
-    echo "Service $SERVICE_NAME removed successfully."
+    echo -e "${GREEN}Service $SERVICE_NAME removed successfully.${NC}"
 }
 
 
 # Main
-COMMAND="$1"
-shift
+check_dependencies
 
-case "$COMMAND" in
-    add)
-        FLAG="$1"
-        shift
-        case "$FLAG" in
-            -l)
-                tplug_add_local "$@"
-                ;;
-            -g)
-                tplug_add_github "$@"
-                ;;
-            *)
-                echo "Usage: tplug add -l <service_name> | -g <repo_url> <service_name>"
-                exit 1
-                ;;
-        esac
-        ;;
-    remove)
-        tplug_remove "$@"
-        ;;
-    *)
-        echo "Usage: tplug <command> [options]"
-        echo "Commands:"
-        echo "  add -l <service_name>            Add a new plugin from the local plugins directory"
-        echo "  add -g <repo_url> <service_name> Add a new plugin from a GitHub repo"
-        echo "  remove <service_name>           Remove an existing plugin"
-        exit 1
-        ;;
+case "$1" in
+    add) shift; add_plugin "$@" ;;
+    install) shift; install_plugin "$@" ;;
+    list-installed) list_installed_plugins ;;
+    remove) shift; remove_plugin "$@" ;;
+    *) echo "Usage: tplug <command> [options]" ;;
 esac
