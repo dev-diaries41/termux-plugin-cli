@@ -11,6 +11,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 ### Fixed
 - No changes yet.
 
+## [0.1.1] - 2024-12-26
+### Added
+- New command `logs` added to view current logs for a given service.
+
+### Fixed
+- No changes yet.
+
 ## [0.1.0] - 2024-12-25
 ### Added
 - Initial release of `tplug` for managing Termux plugins.

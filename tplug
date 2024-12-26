@@ -29,7 +29,7 @@ show_help() {
     echo "Commands:"
     echo "  add <service_name>           Add a plugin from the local directory."
     echo "  install [--all | <name>]     Install plugins from the repository."
-    echo "  view-logs <service_name>     View current logs for service"
+    echo "  logs <service_name>          View current logs for service"
     echo "  list-installed               List all installed plugins."
     echo "  remove <service_name>        Remove a plugin. Use '--purge' to remove logs."
     echo "  --help                       Show this help message."
@@ -171,7 +171,6 @@ remove_plugin() {
 
 
     if [ "$PURGE" = "--purge" ]; then
-        echo "Purging logs and unnecessary files for $SERVICE_NAME..."
         purge_logs "$SERVICE_NAME"
     fi
 
@@ -202,7 +201,7 @@ check_dependencies
 case "$1" in
     add) shift; add_plugin "$@" ;;
     install) shift; install_plugin "$@" ;;
-    view-logs) shift; view_logs "$@" ;;
+    logs) shift; view_logs "$@" ;;
     list-installed) list_installed_plugins ;;
     remove) shift; remove_plugin "$@" ;;
     --help) show_help ;;
