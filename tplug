@@ -125,25 +125,10 @@ add_plugin() {
 
 # Install plugin from repository
 install_plugin() {
-    local FLAG=""
-    local SERVICE_NAME=""
+    local ARG="$1"  # The first argument (either --all or the plugin name)
     local TEMP_DIR=$(mktemp -d)
 
-    # Parse the arguments to check for flags and service name
-    while [[ "$1" ]]; do
-        case "$1" in
-            --all)
-                FLAG="--all"
-                shift
-                ;;
-            *)
-                SERVICE_NAME="$1"
-                shift
-                ;;
-        esac
-    done
-
-    if [ "$FLAG" = "--all" ]; then
+    if [ "$ARG" = "--all" ]; then
         echo "Installing all plugins..."
         git clone "$TERMUX_PLUGINS_REPO_URL" "$TEMP_DIR" || {
             echo -e "${RED}Failed to clone repository.${NC}"
@@ -153,8 +138,11 @@ install_plugin() {
             local PLUGIN_NAME=$(basename "$PLUGIN_DIR")
             install_from_directory "$PLUGIN_NAME" "$PLUGIN_DIR"
         done
-    elif [ -n "$SERVICE_NAME" ]; then
-        # Clone the repository with sparse-checkout options
+    elif [ -n "$ARG" ]; then
+        # Install a single plugin if the argument is not --all
+        local SERVICE_NAME="$ARG"
+        echo "Installing plugin $SERVICE_NAME..."
+
         git clone --filter=blob:none --no-checkout "$TERMUX_PLUGINS_REPO_URL" "$TEMP_DIR" || {
             echo -e "${RED}Failed to clone repository.${NC}"
             exit 1
@@ -254,8 +242,8 @@ remove_plugin() {
 check_dependencies
 
 case "$1" in
-    add) shift; add_plugin "$@" ;;
-    install) shift; install_plugin "$@" ;;
+    add) add_plugin "$@" ;;
+    install) install_plugin "$@" ;;
     list-installed) list_installed_plugins ;;
     remove) shift; remove_plugin "$@" ;;
     --help) show_help ;;
