@@ -15,6 +15,15 @@ GREEN="\033[0;32m"
 RED="\033[0;31m"
 NC="\033[0m" # No Color
 
+# Utility functions for output
+error() { echo -e "${RED}$*${NC}"; }
+success() { echo -e "${GREEN}$*${NC}"; }
+
+# Utility to ensure a directory exists
+ensure_dir_exists() {
+    [ -d "$1" ] || { error "Error: Directory $1 does not exist."; exit 1; }
+}
+
 # Show help message
 show_help() {
     echo "Usage: tplug <command> [options]"
@@ -23,7 +32,7 @@ show_help() {
     echo "  add <service_name>           Add a plugin from the local directory."
     echo "  install [--all | <name>]     Install plugins from the repository."
     echo "  list-installed               List all installed plugins."
-    echo "  remove <service_name>        Remove a plugin. Use '--delete-logs' to remove logs."
+    echo "  remove <service_name>        Remove a plugin. Use '--purge' to remove logs."
     echo "  --help                       Show this help message."
     echo
 }
@@ -33,7 +42,7 @@ check_dependencies() {
     REQUIRED_COMMANDS="git pkg"
     for cmd in $REQUIRED_COMMANDS; do
         if ! command -v $cmd >/dev/null; then
-            echo -e "${RED}Error: Required command '$cmd' is not installed.${NC}"
+            error "Required command '$cmd' is not installed."
             exit 1
         fi
     done
@@ -42,27 +51,12 @@ check_dependencies() {
 # Install dependencies listed in plugin.yml
 install_dependencies() {
     local PLUGIN_DIR="$1"
-    if [ -f "$PLUGIN_DIR/plugin.yml" ]; then
-        echo "Installing dependencies from plugin.yml..."
-        # Initialize an empty list to hold dependencies
-        local DEP_LIST=""
-
-        # Extract all dependencies from plugin.yml and accumulate them in DEP_LIST
-        grep -oP '(?<=- name: )\S+' "$PLUGIN_DIR/plugin.yml" | while read -r DEP; do
-            DEP_LIST="$DEP_LIST $DEP"
-        done
-
-        # If there are any dependencies, install them in one go
-        if [ -n "$DEP_LIST" ]; then
-            echo "Installing dependencies: $DEP_LIST"
-            pkg install -y $DEP_LIST || {
-                echo -e "${RED}Failed to install dependencies: $DEP_LIST${NC}"
-                exit 1
-            }
-        fi
-    fi
+    [ -f "$PLUGIN_DIR/plugin.yml" ] || return
+    echo "Installing dependencies from plugin.yml..."
+    local DEPS
+    DEPS=$(grep -oP '(?<=- name: )\S+' "$PLUGIN_DIR/plugin.yml" | xargs)
+    [ -n "$DEPS" ] && pkg install -y $DEPS || error "Failed to install dependencies: $DEPS"
 }
-
 
 # Create and configure the service directory
 create_service() {
@@ -76,7 +70,7 @@ create_service() {
         cp "$PLUGIN_DIR/run" "$SERVICE_DIR/$SERVICE_NAME/run"
         chmod 755 "$SERVICE_DIR/$SERVICE_NAME/run"
     else
-        echo -e "${RED}Error: 'run' script missing in $PLUGIN_DIR.${NC}"
+        error "'run' script missing in $PLUGIN_DIR."
         exit 1
     fi
 
@@ -92,99 +86,50 @@ install_from_directory() {
     local SOURCE_DIR="$2"
     local DEST_DIR="$LOCAL_PLUGIN_DIR/$PLUGIN_NAME"
 
-    if [ ! -d "$SOURCE_DIR" ]; then
-        echo -e "${RED}Error: Source directory $SOURCE_DIR does not exist.${NC}"
-        exit 1
-    fi
+    ensure_dir_exists "$SOURCE_DIR"
 
     mkdir -p "$DEST_DIR"
     cp -r "$SOURCE_DIR"/* "$DEST_DIR"
     add_plugin "$PLUGIN_NAME"
-    echo -e "${GREEN}Service $PLUGIN_NAME installed successfully.${NC}"
+    success "Service $PLUGIN_NAME installed successfully."
 }
 
 # Add plugin from local directory
 add_plugin() {
     local SERVICE_NAME="$1"
-
-    if [ -z "$SERVICE_NAME" ]; then
-        echo -e "${RED}Usage: tplug add <service_name>${NC}"
-        exit 1
-    fi
-
-    local PLUGIN_DIR="$LOCAL_PLUGIN_DIR/$SERVICE_NAME"
-    if [ ! -d "$PLUGIN_DIR" ]; then
-        echo -e "${RED}Error: Plugin directory $PLUGIN_DIR does not exist.${NC}"
-        exit 1
-    fi
-
-    install_dependencies "$PLUGIN_DIR"
-    create_service "$SERVICE_NAME" "$PLUGIN_DIR"
-    echo -e "${GREEN}Service $SERVICE_NAME added successfully.${NC}"
+    ensure_dir_exists "$LOCAL_PLUGIN_DIR/$SERVICE_NAME"
+    install_dependencies "$LOCAL_PLUGIN_DIR/$SERVICE_NAME"
+    create_service "$SERVICE_NAME" "$LOCAL_PLUGIN_DIR/$SERVICE_NAME"
+    success "Service $SERVICE_NAME added successfully."
 }
 
 # Install plugin from repository
 install_plugin() {
-    local ARG="$1"  # The first argument (either --all or the plugin name)
-    local TEMP_DIR=$(mktemp -d)
+    local ARG="$1" TEMP_DIR
+    TEMP_DIR=$(mktemp -d)
+
+    echo "Cloning repository..."
+    git clone --filter=blob:none --no-checkout "$TERMUX_PLUGINS_REPO_URL" "$TEMP_DIR" || {
+        error "Failed to clone repository."
+        exit 1
+    }
+    cd "$TEMP_DIR" || exit 1
 
     if [ "$ARG" = "--all" ]; then
         echo "Installing all plugins..."
-        git clone "$TERMUX_PLUGINS_REPO_URL" "$TEMP_DIR" || {
-            echo -e "${RED}Failed to clone repository.${NC}"
-            exit 1
-        }
-        for PLUGIN_DIR in "$TEMP_DIR"/*/; do
-            local PLUGIN_NAME=$(basename "$PLUGIN_DIR")
-            install_from_directory "$PLUGIN_NAME" "$PLUGIN_DIR"
+        git sparse-checkout init --cone && git checkout
+        for PLUGIN in "$TEMP_DIR"/*/; do
+            install_from_directory "$(basename "$PLUGIN")" "$PLUGIN"
         done
-    elif [ -n "$ARG" ]; then
-        # Install a single plugin if the argument is not --all
-        local SERVICE_NAME="$ARG"
-        echo "Installing plugin $SERVICE_NAME..."
-
-        git clone --filter=blob:none --no-checkout "$TERMUX_PLUGINS_REPO_URL" "$TEMP_DIR" || {
-            echo -e "${RED}Failed to clone repository.${NC}"
-            exit 1
-        }
-
-        # Navigate to the cloned repo and initialize sparse-checkout
-        cd "$TEMP_DIR" || exit 1
-        git sparse-checkout init --cone || {
-            echo -e "${RED}Failed to initialize sparse-checkout.${NC}"
-            exit 1
-        }
-
-        # Set sparse-checkout to the specific plugin directory
-        git sparse-checkout set "$SERVICE_NAME" || {
-            echo -e "${RED}Failed to set sparse-checkout for $SERVICE_NAME.${NC}"
-            exit 1
-        }
-
-        # Ensure the files for the plugin are checked out
-        git checkout || {
-            echo -e "${RED}Failed to checkout the sparse directory.${NC}"
-            exit 1
-        }
-
-        # Verify the plugin directory exists
-        if [ ! -d "$TEMP_DIR/$SERVICE_NAME" ]; then
-            echo -e "${RED}Plugin directory '$SERVICE_NAME' not found.${NC}"
-            exit 1
-        fi
-
-        # Install the plugin from the directory
-        install_from_directory "$SERVICE_NAME" "$TEMP_DIR/$SERVICE_NAME"
     else
-        echo -e "${RED}Usage: tplug install [--all | <service_name>]${NC}"
-        exit 1
+        echo "Installing plugin $ARG..."
+        git sparse-checkout init --cone
+        git sparse-checkout set "$ARG" && git checkout
+        ensure_dir_exists "$TEMP_DIR/$ARG"
+        install_from_directory "$ARG" "$TEMP_DIR/$ARG"
     fi
-
-    # Clean up the temporary directory
     rm -rf "$TEMP_DIR"
 }
-
-
 
 # List installed plugins
 list_installed_plugins() {
@@ -196,47 +141,33 @@ list_installed_plugins() {
     fi
 }
 
+# Purge logs for a service
+purge_logs() {
+    local LOG_DIR="$LOGS_DIR/$1"
+    [ -d "$LOG_DIR" ] && rm -rf "$LOG_DIR"
+}
+
 # Remove plugin
 remove_plugin() {
     local SERVICE_NAME="$1"
     local PURGE="$2"
 
     if [ -z "$SERVICE_NAME" ]; then
-        echo -e "${RED}Usage: tplug remove <service_name> [--purge]${NC}"
+        error "Usage: tplug remove <service_name> [--purge]"
         exit 1
     fi
 
     if [ -d "$SERVICE_DIR/$SERVICE_NAME" ]; then
         echo "Removing service $SERVICE_NAME..."
-        # Unlink specific symlinks
-        if [ -L "$SERVICE_DIR/$SERVICE_NAME/log/run" ]; then
-            echo "Unlinking log symlink..."
-            unlink "$SERVICE_DIR/$SERVICE_NAME/log/run"
-        fi
-
-        # Remove service directory
+        [ -L "$SERVICE_DIR/$SERVICE_NAME/log/run" ] && unlink "$SERVICE_DIR/$SERVICE_NAME/log/run"
         rm -rf "$SERVICE_DIR/$SERVICE_NAME"
     else
-        echo -e "${RED}Error: Service $SERVICE_NAME does not exist.${NC}"
+        error "Service $SERVICE_NAME does not exist."
     fi
 
-    # Handle --purge flag
-    if [ "$PURGE" = "--purge" ]; then
-        echo "Purging logs and unnecessary files for $SERVICE_NAME..."
-        if [ -d "$LOGS_DIR/$SERVICE_NAME" ]; then
-            rm -rf "$LOGS_DIR/$SERVICE_NAME"
-        fi
-        if [ -d "$LOCAL_PLUGIN_DIR/$SERVICE_NAME" ]; then
-            rm -rf "$LOCAL_PLUGIN_DIR/$SERVICE_NAME"
-        fi
-        echo -e "${GREEN}Service $SERVICE_NAME and associated files have been purged successfully.${NC}"
-    else
-        echo "Logs for $SERVICE_NAME are preserved at $LOGS_DIR/$SERVICE_NAME/."
-    fi
-
-    echo -e "${GREEN}Service $SERVICE_NAME removed successfully.${NC}"
+    [ "$PURGE" = "--purge" ] && purge_logs "$SERVICE_NAME"
+    success "Service $SERVICE_NAME removed successfully."
 }
-
 
 # Main
 check_dependencies
