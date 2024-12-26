@@ -125,9 +125,23 @@ add_plugin() {
 
 # Install plugin from repository
 install_plugin() {
-    local FLAG="$1"
-    local SERVICE_NAME="$2"
+    local FLAG=""
+    local SERVICE_NAME=""
     local TEMP_DIR=$(mktemp -d)
+
+    # Parse the arguments to check for flags and service name
+    while [[ "$1" ]]; do
+        case "$1" in
+            --all)
+                FLAG="--all"
+                shift
+                ;;
+            *)
+                SERVICE_NAME="$1"
+                shift
+                ;;
+        esac
+    done
 
     if [ "$FLAG" = "--all" ]; then
         echo "Installing all plugins..."
@@ -181,6 +195,7 @@ install_plugin() {
     # Clean up the temporary directory
     rm -rf "$TEMP_DIR"
 }
+
 
 
 # List installed plugins
