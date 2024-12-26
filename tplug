@@ -130,7 +130,7 @@ install_plugin() {
             local PLUGIN_NAME=$(basename "$PLUGIN_DIR")
             install_from_directory "$PLUGIN_NAME" "$PLUGIN_DIR"
         done
-    elif [ "$SERVICE_NAME" ]; then
+    elif [ -n "$SERVICE_NAME" ]; then
         # Clone the repository with sparse-checkout options
         git clone --filter=blob:none --no-checkout "$TERMUX_PLUGINS_REPO_URL" "$TEMP_DIR" || {
             echo -e "${RED}Failed to clone repository.${NC}"
