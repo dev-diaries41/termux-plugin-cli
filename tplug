@@ -137,12 +137,14 @@ list_installed_plugins() {
         echo "No plugins installed."
     fi
 }
+
 list_available_plugins() {
     local TEMP_DIR
     TEMP_DIR=$(mktemp -d)
 
     echo "Fetching available plugins from the repository..."
-    git clone --filter=blob:none --no-checkout "$TERMUX_PLUGINS_REPO_URL" "$TEMP_DIR" || {
+    # Suppress git clone output (both stdout and stderr)
+    git clone --filter=blob:none --no-checkout "$TERMUX_PLUGINS_REPO_URL" "$TEMP_DIR" > /dev/null 2>&1 || {
         error "Failed to clone repository."
         exit 1
     }
@@ -156,6 +158,7 @@ list_available_plugins() {
 
     rm -rf "$TEMP_DIR"
 }
+
 
 
 # Purge logs for a service with debug output
