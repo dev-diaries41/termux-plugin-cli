@@ -149,14 +149,17 @@ list_available_plugins() {
     }
     cd "$TEMP_DIR" || exit 1
 
-    # Initialize sparse-checkout and list available plugins
+    # Initialize sparse-checkout to only fetch the folder structure
     git sparse-checkout init --cone
-    git checkout
+    git checkout --depth 1  # Only fetch top-level folder names, not their contents
+
     echo "Available plugins:"
+    # List the plugin folders (top-level directories)
     find . -maxdepth 1 -mindepth 1 -type d -exec basename {} \;
 
     rm -rf "$TEMP_DIR"
 }
+
 
 # Purge logs for a service with debug output
 purge_logs() {
