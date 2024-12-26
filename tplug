@@ -15,11 +15,9 @@ GREEN="\033[0;32m"
 RED="\033[0;31m"
 NC="\033[0m" # No Color
 
-# Utility functions for output
+# utilities
 error() { echo -e "${RED}$*${NC}"; }
 success() { echo -e "${GREEN}$*${NC}"; }
-
-# Utility to ensure a directory exists
 ensure_dir_exists() {
     [ -d "$1" ] || { error "Error: Directory $1 does not exist."; exit 1; }
 }
@@ -31,6 +29,7 @@ show_help() {
     echo "Commands:"
     echo "  add <service_name>           Add a plugin from the local directory."
     echo "  install [--all | <name>]     Install plugins from the repository."
+    echo "  view-logs <service_name>     View current logs for service"
     echo "  list-installed               List all installed plugins."
     echo "  remove <service_name>        Remove a plugin. Use '--purge' to remove logs."
     echo "  --help                       Show this help message."
@@ -94,7 +93,6 @@ install_from_directory() {
     success "Service $PLUGIN_NAME installed successfully."
 }
 
-# Add plugin from local directory
 add_plugin() {
     local SERVICE_NAME="$1"
     ensure_dir_exists "$LOCAL_PLUGIN_DIR/$SERVICE_NAME"
@@ -103,7 +101,6 @@ add_plugin() {
     success "Service $SERVICE_NAME added successfully."
 }
 
-# Install plugin from repository
 install_plugin() {
     local ARG="$1" TEMP_DIR
     TEMP_DIR=$(mktemp -d)
@@ -131,7 +128,6 @@ install_plugin() {
     rm -rf "$TEMP_DIR"
 }
 
-# List installed plugins
 list_installed_plugins() {
     echo "Installed plugins:"
     if [ -d "$LOCAL_PLUGIN_DIR" ]; then
@@ -147,7 +143,18 @@ purge_logs() {
     [ -d "$LOG_DIR" ] && rm -rf "$LOG_DIR"
 }
 
-# Remove plugin
+# Purge logs for a service with debug output
+purge_logs() {
+    local LOG_DIR="$LOGS_DIR/$1"
+    if [ -d "$LOG_DIR" ]; then
+        echo "Purging logs for service: $1"
+        rm -rf "$LOG_DIR"
+        echo "Logs purged successfully."
+    else
+        echo "No logs found for service: $1"
+    fi
+}
+
 remove_plugin() {
     local SERVICE_NAME="$1"
     local PURGE="$2"
@@ -157,17 +164,37 @@ remove_plugin() {
         exit 1
     fi
 
-    if [ -d "$SERVICE_DIR/$SERVICE_NAME" ]; then
-        echo "Removing service $SERVICE_NAME..."
-        [ -L "$SERVICE_DIR/$SERVICE_NAME/log/run" ] && unlink "$SERVICE_DIR/$SERVICE_NAME/log/run"
-        rm -rf "$SERVICE_DIR/$SERVICE_NAME"
-    else
-        error "Service $SERVICE_NAME does not exist."
+    ensure_dir_exists "$SERVICE_DIR/$SERVICE_NAME"
+    echo "Removing service $SERVICE_NAME..."
+    [ -L "$SERVICE_DIR/$SERVICE_NAME/log/run" ] && unlink "$SERVICE_DIR/$SERVICE_NAME/log/run"
+    rm -rf "$SERVICE_DIR/$SERVICE_NAME"
+
+
+    if [ "$PURGE" = "--purge" ]; then
+        echo "Purging logs and unnecessary files for $SERVICE_NAME..."
+        purge_logs "$SERVICE_NAME"
     fi
 
-    [ "$PURGE" = "--purge" ] && purge_logs "$SERVICE_NAME"
     success "Service $SERVICE_NAME removed successfully."
 }
+
+view_logs() {
+    local SERVICE_NAME="$1"
+    local LOG_FILE="$LOGS_DIR/$SERVICE_NAME/current"
+
+    if [ -z "$SERVICE_NAME" ]; then
+        error "Usage: tplug view-logs <service_name>"
+        exit 1
+    fi
+
+    if [ -f "$LOG_FILE" ]; then
+        echo "Showing logs for service: $SERVICE_NAME"
+        cat "$LOG_FILE"
+    else
+        error "Log file for service $SERVICE_NAME does not exist."
+    fi
+}
+
 
 # Main
 check_dependencies
@@ -175,6 +202,7 @@ check_dependencies
 case "$1" in
     add) shift; add_plugin "$@" ;;
     install) shift; install_plugin "$@" ;;
+    view-logs) shift; view_logs "$@" ;;
     list-installed) list_installed_plugins ;;
     remove) shift; remove_plugin "$@" ;;
     --help) show_help ;;
