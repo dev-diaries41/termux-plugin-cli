@@ -114,6 +114,7 @@ add_plugin() {
 }
 
 # Install plugin from repository
+# Install plugin from repository
 install_plugin() {
     local FLAG="$1"
     local SERVICE_NAME="$2"
@@ -130,18 +131,48 @@ install_plugin() {
             install_from_directory "$PLUGIN_NAME" "$PLUGIN_DIR"
         done
     elif [ "$SERVICE_NAME" ]; then
+        # Clone the repository with sparse-checkout options
         git clone --filter=blob:none --no-checkout "$TERMUX_PLUGINS_REPO_URL" "$TEMP_DIR" || {
             echo -e "${RED}Failed to clone repository.${NC}"
             exit 1
         }
-        cd "$TEMP_DIR" && git sparse-checkout init --cone && git sparse-checkout set "$SERVICE_NAME"
+
+        # Navigate to the cloned repo and initialize sparse-checkout
+        cd "$TEMP_DIR" || exit 1
+        git sparse-checkout init --cone || {
+            echo -e "${RED}Failed to initialize sparse-checkout.${NC}"
+            exit 1
+        }
+
+        # Set sparse-checkout to the specific plugin directory
+        git sparse-checkout set "$SERVICE_NAME" || {
+            echo -e "${RED}Failed to set sparse-checkout for $SERVICE_NAME.${NC}"
+            exit 1
+        }
+
+        # Ensure the files for the plugin are checked out
+        git checkout || {
+            echo -e "${RED}Failed to checkout the sparse directory.${NC}"
+            exit 1
+        }
+
+        # Verify the plugin directory exists
+        if [ ! -d "$TEMP_DIR/$SERVICE_NAME" ]; then
+            echo -e "${RED}Plugin directory '$SERVICE_NAME' not found.${NC}"
+            exit 1
+        fi
+
+        # Install the plugin from the directory
         install_from_directory "$SERVICE_NAME" "$TEMP_DIR/$SERVICE_NAME"
     else
         echo -e "${RED}Usage: tplug install [--all | <service_name>]${NC}"
         exit 1
     fi
+
+    # Clean up the temporary directory
     rm -rf "$TEMP_DIR"
 }
+
 
 # List installed plugins
 list_installed_plugins() {
