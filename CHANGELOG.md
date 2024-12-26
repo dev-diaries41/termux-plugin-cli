@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 ## [0.1.1] - 2024-12-26
 ### Added
 - New command `logs` added to view current logs for a given service.
+- New command `list-available` added to view available plugins.
+
 
 ### Fixed
 - No changes yet.

@@ -30,6 +30,7 @@ show_help() {
     echo "  add <service_name>           Add a plugin from the local directory."
     echo "  install [--all | <name>]     Install plugins from the repository."
     echo "  logs <service_name>          View current logs for service"
+    echo "  list-available               List all available plugins in the repository."
     echo "  list-installed               List all installed plugins."
     echo "  remove <service_name>        Remove a plugin. Use '--purge' to remove logs."
     echo "  --help                       Show this help message."
@@ -137,10 +138,24 @@ list_installed_plugins() {
     fi
 }
 
-# Purge logs for a service
-purge_logs() {
-    local LOG_DIR="$LOGS_DIR/$1"
-    [ -d "$LOG_DIR" ] && rm -rf "$LOG_DIR"
+list_available_plugins() {
+    local TEMP_DIR
+    TEMP_DIR=$(mktemp -d)
+
+    echo "Fetching available plugins from the repository..."
+    git clone --filter=blob:none --no-checkout "$TERMUX_PLUGINS_REPO_URL" "$TEMP_DIR" || {
+        error "Failed to clone repository."
+        exit 1
+    }
+    cd "$TEMP_DIR" || exit 1
+
+    # Initialize sparse-checkout and list available plugins
+    git sparse-checkout init --cone
+    git checkout
+    echo "Available plugins:"
+    find . -maxdepth 1 -mindepth 1 -type d -exec basename {} \;
+
+    rm -rf "$TEMP_DIR"
 }
 
 # Purge logs for a service with debug output
@@ -182,7 +197,7 @@ view_logs() {
     local LOG_FILE="$LOGS_DIR/$SERVICE_NAME/current"
 
     if [ -z "$SERVICE_NAME" ]; then
-        error "Usage: tplug view-logs <service_name>"
+        error "Usage: tplug logs <service_name>"
         exit 1
     fi
 
@@ -202,8 +217,9 @@ case "$1" in
     add) shift; add_plugin "$@" ;;
     install) shift; install_plugin "$@" ;;
     logs) shift; view_logs "$@" ;;
-    list-installed) list_installed_plugins ;;
     remove) shift; remove_plugin "$@" ;;
+    list-installed) list_installed_plugins ;;
+    list-available) list_available_plugins ;;
     --help) show_help ;;
     *) show_help ;;
 esac

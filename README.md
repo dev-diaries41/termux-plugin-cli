@@ -31,6 +31,8 @@ Ensure that the following dependencies are installed on your Termux environment:
 - **Add plugins from local directories**  
 - **Install plugins from a GitHub repository**  
 - **List installed plugins**  
+- **List available plugins from the repository**  
+- **View logs for installed services**  
 - **Remove plugins**  
 - **Remove plugin logs (optional)**  
 - **Manage dependencies listed in `plugin.yml` files**
@@ -79,14 +81,26 @@ tplug <command> [options]
    tplug list-installed
    ```
 
-4. **`remove <service_name> [--purge]`**  
+4. **`list-available`**  
+   List all available plugins from the Termux plugins repository.
+   ```bash
+   tplug list-available
+   ```
+
+5. **`logs <service_name>`**  
+   View logs for a service.
+   ```bash
+   tplug logs <service_name>
+   ```
+
+6. **`remove <service_name> [--purge]`**  
    Remove a plugin. The `--purge` option will delete the plugin's logs and other associated files.
    ```bash
    tplug remove <service_name>
    tplug remove <service_name> --purge
    ```
 
-5. **`--help`**  
+7. **`--help`**  
    Show the help message and usage details.
    ```bash
    tplug --help
@@ -103,7 +117,6 @@ tplug <command> [options]
   ```
 
 ---
-
 
 ## Dependencies
 
@@ -124,5 +137,3 @@ When installing plugins from local directories, the tool will automatically read
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
