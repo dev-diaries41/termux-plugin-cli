@@ -1,6 +1,18 @@
 # tplug - Termux Plugin Manager
 
-`tplug` is a command-line tool designed to manage Termux plugins specifically for use with termux-services, providing an easy way to install, remove, and manage background services in Termux. It simplifies the process of adding, installing, and configuring plugins from both local directories and remote repositories, ensuring seamless integration with Termux’s service management system.
+`tplug` is a command-line tool designed to manage Termux plugins, which can be used as `termux-services`. It simplifies the process of installing, removing, and managing these services, ensuring seamless integration with Termux’s service management system. The tool allows you to:
+
+- Add plugins from both local directories and repositories.
+- Install, list, and remove plugins and services.
+- View logs for services and manage their installation/removal.
+- Customize plugin repositories through environment variables.
+
+---
+
+### **Important Notes on Plugins**
+
+- All plugins must follow a specific format described in the [Termux Plugin Repository](https://github.com/dev-diaries41/termux-plugins.git).
+- All plugins are stored in the `$HOME/.termux-plugins` directory. To add your own plugins, use this directory for compatibility with `tplug`.
 
 ---
 
