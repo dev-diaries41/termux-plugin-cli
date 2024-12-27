@@ -16,8 +16,8 @@ RED="\033[0;31m"
 NC="\033[0m" # No Color
 
 # utilities
-error() { echo -e "${RED}$*${NC}"; }
-success() { echo -e "${GREEN}$*${NC}"; }
+error() { echo "${RED}$*${NC}"; }
+success() { echo "${GREEN}$*${NC}"; }
 ensure_dir_exists() {
     [ -d "$1" ] || { error "Error: Directory $1 does not exist."; exit 1; }
 }
@@ -76,11 +76,24 @@ create_service() {
         exit 1
     fi
 
+    # Enforce plugin file structure
     if [ -d "$PLUGIN_DIR/plugin" ]; then
+        if [ ! -f "$PLUGIN_DIR/plugin/run.py" ] && [ ! -f "$PLUGIN_DIR/plugin/run.sh" ]; then
+            error "'run.py' or 'run.sh' is missing in $PLUGIN_DIR/plugin."
+            exit 1
+        fi
+        
+        # Copy the plugin files
         mkdir -p "$SERVICE_DIR/$SERVICE_NAME/plugin"
         cp -r "$PLUGIN_DIR/plugin/"* "$SERVICE_DIR/$SERVICE_NAME/plugin/"
+
+        # Make run.sh executable if it exists
+        if [ -f "$PLUGIN_DIR/plugin/run.sh" ]; then
+            chmod 755 "$SERVICE_DIR/$SERVICE_NAME/plugin/run.sh"
+        fi
     fi
 }
+
 
 # Install plugin from a specific directory
 install_from_directory() {
