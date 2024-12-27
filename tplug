@@ -27,12 +27,14 @@ show_help() {
     echo "Usage: tplug <command> [options]"
     echo
     echo "Commands:"
-    echo "  add <service_name>           Add a plugin from the local directory."
+    echo "  add <plugin_name>            Add a plugin from the local directory."
     echo "  install [--all | <name>]     Install plugins from the repository."
     echo "  logs <service_name>          View current logs for service"
     echo "  list-available               List all available plugins in the repository."
-    echo "  list-installed               List all installed plugins."
-    echo "  remove <service_name>        Remove a plugin. Use '--purge' to remove logs."
+    echo "  list-services                List all termux services."
+    echo "  list-plugins                 List all installed plugins."
+    echo "  remove <service_name>        Remove a termux service. Use '--purge' to remove logs."
+    echo "  remove-plugin <plugin_name>  Remove a plugin."
     echo "  --help                       Show this help message."
     echo
 }
@@ -91,15 +93,15 @@ install_from_directory() {
     mkdir -p "$DEST_DIR"
     cp -r "$SOURCE_DIR"/* "$DEST_DIR"
     add_plugin "$PLUGIN_NAME"
-    success "Service $PLUGIN_NAME installed successfully."
+    success "Plugin $PLUGIN_NAME installed successfully."
 }
 
 add_plugin() {
-    local SERVICE_NAME="$1"
-    ensure_dir_exists "$LOCAL_PLUGIN_DIR/$SERVICE_NAME"
-    install_dependencies "$LOCAL_PLUGIN_DIR/$SERVICE_NAME"
-    create_service "$SERVICE_NAME" "$LOCAL_PLUGIN_DIR/$SERVICE_NAME"
-    success "Service $SERVICE_NAME added successfully."
+    local PLUGIN_NAME="$1"
+    ensure_dir_exists "$LOCAL_PLUGIN_DIR/$PLUGIN_NAME"
+    install_dependencies "$LOCAL_PLUGIN_DIR/$PLUGIN_NAME"
+    create_service "$PLUGIN_NAME" "$LOCAL_PLUGIN_DIR/$PLUGIN_NAME"
+    success "Plugin $PLUGIN_NAME added successfully."
 }
 
 install_plugin() {
@@ -129,13 +131,16 @@ install_plugin() {
     rm -rf "$TEMP_DIR"
 }
 
-list_installed_plugins() {
-    echo "Installed plugins:"
-    if [ -d "$LOCAL_PLUGIN_DIR" ]; then
-        find "$LOCAL_PLUGIN_DIR" -maxdepth 1 -mindepth 1 -type d -exec basename {} \;
-    else
-        echo "No plugins installed."
-    fi
+list_plugins() {
+    ensure_dir_exists "$LOCAL_PLUGIN_DIR"
+    echo "Installed Plugins:"
+    find "$LOCAL_PLUGIN_DIR" -maxdepth 1 -mindepth 1 -type d -exec basename {} \; || echo "No plugins installed."
+}
+
+list_services() {
+    ensure_dir_exists "$SERVICE_DIR"
+    echo "Installed Services:"
+    find "$SERVICE_DIR" -maxdepth 1 -mindepth 1 -type d -exec basename {} \; || echo "No services installed."
 }
 
 list_available_plugins() {
@@ -143,14 +148,12 @@ list_available_plugins() {
     TEMP_DIR=$(mktemp -d)
 
     echo "Fetching available plugins from the repository..."
-    # Suppress git clone output (both stdout and stderr)
     git clone --filter=blob:none --no-checkout "$TERMUX_PLUGINS_REPO_URL" "$TEMP_DIR" > /dev/null 2>&1 || {
         error "Failed to clone repository."
         exit 1
     }
     cd "$TEMP_DIR" || exit 1
 
-    # List top-level directories (plugins) and exclude .git directory
     echo "Available plugins:"
     git ls-tree -d --name-only HEAD | \
     grep -v '^\.git$' | \
@@ -160,9 +163,7 @@ list_available_plugins() {
 }
 
 
-
-# Purge logs for a service with debug output
-purge_logs() {
+clear_logs() {
     local LOG_DIR="$LOGS_DIR/$1"
     if [ -d "$LOG_DIR" ]; then
         echo "Purging logs for service: $1"
@@ -173,7 +174,7 @@ purge_logs() {
     fi
 }
 
-remove_plugin() {
+remove_service() {
     local SERVICE_NAME="$1"
     local PURGE="$2"
 
@@ -189,10 +190,24 @@ remove_plugin() {
 
 
     if [ "$PURGE" = "--purge" ]; then
-        purge_logs "$SERVICE_NAME"
+        clear_logs "$SERVICE_NAME"
     fi
 
     success "Service $SERVICE_NAME removed successfully."
+}
+
+remove_plugin() {
+    local PLUGIN_NAME="$1"
+
+    if [ -z "$PLUGIN_NAME" ]; then
+        error "Usage: tplug remove-plugin <plugin_name>"
+        exit 1
+    fi
+
+    ensure_dir_exists "$LOCAL_PLUGIN_DIR/$PLUGIN_NAME"
+    echo "Removing plugin $PLUGIN_NAME..."
+    rm -rf "$LOCAL_PLUGIN_DIR/$PLUGIN_NAME"
+    success "Plugin $PLUGIN_NAME removed successfully."
 }
 
 view_logs() {
@@ -220,8 +235,10 @@ case "$1" in
     add) shift; add_plugin "$@" ;;
     install) shift; install_plugin "$@" ;;
     logs) shift; view_logs "$@" ;;
-    remove) shift; remove_plugin "$@" ;;
-    list-installed) list_installed_plugins ;;
+    remove) shift; remove_service "$@" ;;
+    remove-plugin) shift; remove_plugin "$@" ;;
+    list-plugins) list_plugins ;;
+    list-services) list_services ;;
     list-available) list_available_plugins ;;
     --help) show_help ;;
     *) show_help ;;

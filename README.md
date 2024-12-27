@@ -7,14 +7,13 @@
 ## Table of Contents
 
 1. [Requirements](#requirements)
-2. [Features](#features)
-3. [Installation](#installation)
-4. [Usage](#usage)
+2. [Installation](#installation)
+3. [Usage](#usage)
     - [Commands](#commands)
     - [Environment Variables](#environment-variables)
-5. [Dependencies](#dependencies)
-6. [Troubleshooting](#troubleshooting)
-7. [License](#license)
+4. [Dependencies](#dependencies)
+5. [Troubleshooting](#troubleshooting)
+6. [License](#license)
 
 ---
 
@@ -23,19 +22,6 @@
 Ensure that the following dependencies are installed on your Termux environment:
 
 - `git`
-
----
-
-## Features
-
-- **Add plugins from local directories**  
-- **Install plugins from a GitHub repository**  
-- **List installed plugins**  
-- **List available plugins from the repository**  
-- **View logs for installed services**  
-- **Remove plugins**  
-- **Remove plugin logs (optional)**  
-- **Manage dependencies listed in `plugin.yml` files**
 
 ---
 
@@ -62,10 +48,10 @@ tplug <command> [options]
 
 ### Commands
 
-1. **`add <service_name>`**  
+1. **`add <plugin_name>`**  
    Add a plugin from the local directory.
    ```bash
-   tplug add <service_name>
+   tplug add <plugin_name>
    ```
 
 2. **`install [--all | <name>]`**  
@@ -75,32 +61,45 @@ tplug <command> [options]
    tplug install <plugin_name>
    ```
 
-3. **`list-installed`**  
+3. **`list-plugins`**  
    List all installed plugins.
    ```bash
-   tplug list-installed
+   tplug list-plugins
    ```
 
-4. **`list-available`**  
-   List all available plugins from the Termux plugins repository.
+4. **`list-services`**  
+   List all installed services.
+   ```bash
+   tplug list-services
+   ``
+
+5. **`list-available`**  
+   List all available plugins from the termux-plugins repository.
    ```bash
    tplug list-available
    ```
 
-5. **`logs <service_name>`**  
+6. **`logs <service_name>`**  
    View logs for a service.
    ```bash
    tplug logs <service_name>
    ```
 
-6. **`remove <service_name> [--purge]`**  
-   Remove a plugin. The `--purge` option will delete the plugin's logs and other associated files.
+7. **`remove <service_name> [--purge]`**  
+   Remove a service. The `--purge` option will delete the services's logs.
    ```bash
    tplug remove <service_name>
    tplug remove <service_name> --purge
    ```
 
-7. **`--help`**  
+8. **`remove-plugin <plugin_name>`**  
+   Remove a plugin.
+   ```bash
+   tplug remove-plugin <plugin_name>
+   ```
+
+
+9. **`--help`**  
    Show the help message and usage details.
    ```bash
    tplug --help
