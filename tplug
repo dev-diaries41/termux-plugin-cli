@@ -181,9 +181,9 @@ clear_logs() {
     if [ -d "$LOG_DIR" ]; then
         echo "Purging logs for service: $1"
         rm -rf "$LOG_DIR"
-        echo "Logs purged successfully."
+        success "Logs purged successfully."
     else
-        echo "No logs found for service: $1"
+        error "No logs found for service: $1"
     fi
 }
 

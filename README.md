@@ -25,7 +25,6 @@
     - [Environment Variables](#environment-variables)
 4. [Dependencies](#dependencies)
 5. [Troubleshooting](#troubleshooting)
-6. [License](#license)
 
 ---
 
@@ -44,7 +43,7 @@ You can download and use `tplug` by following these steps:
 1. Clone this repository or download the script to your Termux environment.
 2. Set the executable permission for the script:
    ```bash
-   chmod +x tplug
+   chmod 755 tplug
    ```
 3. Move it to a directory included in your `PATH` (e.g., `/usr/bin/`).
 
@@ -144,7 +143,3 @@ When installing plugins from local directories, the tool will automatically read
   Ensure that you have appropriate permissions for installing plugins and accessing the required directories.
 
 ---
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
