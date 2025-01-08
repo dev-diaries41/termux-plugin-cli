@@ -2,9 +2,8 @@
 
 USR_PREFIX="/data/data/com.termux/files/usr"
 SERVICE_DIR="$USR_PREFIX/var/service"
-UTILS_DIR="$(dirname "$0")/../"
-
-. "$UTILS_DIR/utils.sh"
+TPLUG_CLI_DIR="/data/data/com.termux/files/home/.termux-plugin-cli"
+. "$TPLUG_CLI_DIR/utils.sh"
 
 check_dir "$SERVICE_DIR"
 echo "Installed Services:"

@@ -1,7 +1,7 @@
 #!/data/data/com.termux/files/usr/bin/sh
 
-UTILS_DIR="$(dirname "$0")/../"
-. "$UTILS_DIR/utils.sh"
+TPLUG_CLI_DIR="/data/data/com.termux/files/home/.termux-plugin-cli"
+. "$TPLUG_CLI_DIR/utils.sh"
 . "./add.sh"
 
 

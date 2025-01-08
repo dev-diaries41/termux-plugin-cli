@@ -1,6 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/sh
 
-TPLUG_CLI_DIR="/data/data/com.termux/files/home/.termux-plugins-cli"
+TPLUG_CLI_DIR="/data/data/com.termux/files/home/.termux-plugin-cli"
 COMMAND_DIR="$TPLUG_CLI_DIR/commands/"
 
 show_help() {

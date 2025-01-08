@@ -3,9 +3,8 @@
 
 USR_PREFIX="/data/data/com.termux/files/usr"
 SERVICE_DIR="$USR_PREFIX/var/service"
-UTILS_DIR="$(dirname "$0")/../"
-. "$UTILS_DIR/utils.sh"
-. "./l.sh"
+TPLUG_CLI_DIR="/data/data/com.termux/files/home/.termux-plugin-cli"
+. "$TPLUG_CLI_DIR/utils.sh"
 
 SERVICE_NAME="$1"
 PURGE="$2"

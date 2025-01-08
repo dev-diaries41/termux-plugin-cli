@@ -3,14 +3,14 @@
 USR_PREFIX="/data/data/com.termux/files/usr"
 SERVICE_DIR="$USR_PREFIX/var/service"
 LOGS_DIR="$USR_PREFIX/var/log/sv"
-UTILS_DIR="$(dirname "$0")/../"
-. "$UTILS_DIR/utils.sh"
+TPLUG_CLI_DIR="/data/data/com.termux/files/home/.termux-plugin-cli"
+. "$TPLUG_CLI_DIR/utils.sh"
 
-C_FLAG=false
+CLEAR=false
 
 while getopts "c" opt; do
     case "$opt" in
-        c) C_FLAG=true ;;
+        c) CLEAR=true ;;
         *) error "Usage: tplug logs [-c] <service_name>" ;;
     esac
 done
@@ -26,7 +26,7 @@ if [ -z "$SERVICE_NAME" ]; then
 fi
 
 # purge logs
-if [ "$C_FLAG" = true ]; then
+if [ "$CLEAR" = true ]; then
     if [ -d "$LOG_DIR" ]; then
         echo "Purging logs for service: $SERVICE_NAME"
         rm -rf "$LOG_DIR"
