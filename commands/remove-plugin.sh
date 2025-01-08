@@ -2,7 +2,7 @@
 
 LOCAL_PLUGIN_DIR="/data/data/com.termux/files/home/.termux-plugins"
 UTILS_DIR="$(dirname "$0")/../"
-source "$UTILS_DIR/utils.sh"
+. "$UTILS_DIR/utils.sh"
 
 PLUGIN_NAME="$1"
 

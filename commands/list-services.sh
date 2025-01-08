@@ -4,7 +4,7 @@ USR_PREFIX="/data/data/com.termux/files/usr"
 SERVICE_DIR="$USR_PREFIX/var/service"
 UTILS_DIR="$(dirname "$0")/../"
 
-source "$UTILS_DIR/utils.sh"
+. "$UTILS_DIR/utils.sh"
 
 check_dir "$SERVICE_DIR"
 echo "Installed Services:"

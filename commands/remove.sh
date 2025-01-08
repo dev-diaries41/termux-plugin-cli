@@ -4,8 +4,8 @@
 USR_PREFIX="/data/data/com.termux/files/usr"
 SERVICE_DIR="$USR_PREFIX/var/service"
 UTILS_DIR="$(dirname "$0")/../"
-source "$UTILS_DIR/utils.sh"
-source "./l.sh"
+. "$UTILS_DIR/utils.sh"
+. "./l.sh"
 
 SERVICE_NAME="$1"
 PURGE="$2"

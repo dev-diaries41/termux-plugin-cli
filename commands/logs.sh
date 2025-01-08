@@ -4,7 +4,7 @@ USR_PREFIX="/data/data/com.termux/files/usr"
 SERVICE_DIR="$USR_PREFIX/var/service"
 LOGS_DIR="$USR_PREFIX/var/log/sv"
 UTILS_DIR="$(dirname "$0")/../"
-source "$UTILS_DIR/utils.sh"
+. "$UTILS_DIR/utils.sh"
 
 C_FLAG=false
 

@@ -30,14 +30,15 @@ check_dependencies() {
 }
 
 case "$1" in
-    add) shift; source "$COMMAND_DIR/add.sh" ;;
-    install) shift; source "$COMMAND_DIR/install.sh" ;;
-    logs) shift; source "$COMMAND_DIR/logs.sh" ;;
-    list-plugins) source "$COMMAND_DIR/list-plugins.sh" ;;
-    list-services) source "$COMMAND_DIR/list-services.sh" ;;
-    list-available) source "$COMMAND_DIR/list-available.sh" ;;
-    remove) shift; source "$COMMAND_DIR/remove.sh" ;;
-    remove-plugin) shift; source "$COMMAND_DIR/remove-plugin.sh" ;;
+    add) shift; . "$COMMAND_DIR/add.sh" ;;
+    install) shift; . "$COMMAND_DIR/install.sh" ;;
+    logs) shift; . "$COMMAND_DIR/logs.sh" ;;
+    list-plugins) . "$COMMAND_DIR/list-plugins.sh" ;;
+    list-services) . "$COMMAND_DIR/list-services.sh" ;;
+    list-available) . "$COMMAND_DIR/list-available.sh" ;;
+    remove) shift; . "$COMMAND_DIR/remove.sh" ;;
+    remove-plugin) shift; . "$COMMAND_DIR/remove-plugin.sh" ;;
     --help) show_help ;;
     *) show_help ;;
 esac
+

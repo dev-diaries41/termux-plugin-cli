@@ -1,8 +1,8 @@
 #!/data/data/com.termux/files/usr/bin/sh
 
 UTILS_DIR="$(dirname "$0")/../"
-source "$UTILS_DIR/utils.sh"
-source "./add.sh"
+. "$UTILS_DIR/utils.sh"
+. "./add.sh"
 
 
 ARG="$1" 
