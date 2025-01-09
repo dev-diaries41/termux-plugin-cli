@@ -121,7 +121,6 @@ add_service() {
 install_plugin() {
     local ARG INSTALL_TYPE INSTALL_ALL=false PLUGIN_NAME DEST_DIR TEMP_DIR PLUGIN_DIR
 
-    # Initialize options
     while getopts "sra" opt; do
         case $opt in
             s) INSTALL_TYPE="services" ;;
@@ -131,11 +130,9 @@ install_plugin() {
         esac
     done
 
-    # Handle the plugin name after options
     shift $((OPTIND - 1))
     ARG="$1"
 
-    # Validation for options
     if [ "$INSTALL_ALL" = true ] && [ -z "$INSTALL_TYPE" ]; then
         echo "Error: -a flag must be used with either -s (services) or -r (scripts)"
         exit 1
@@ -146,7 +143,6 @@ install_plugin() {
         exit 1
     fi
 
-    # Create a temporary directory for cloning the repository
     TEMP_DIR=$(mktemp -d)
 
     echo "Cloning repository..."
@@ -169,25 +165,19 @@ install_plugin() {
             check_dir "$PLUGIN"
             mkdir -p "$DEST_DIR"
             cp -r "$PLUGIN"/* "$DEST_DIR"
-            if [ "$INSTALL_TYPE" = "services" ]; then
-                add_service "$PLUGIN_NAME" 
-            fi
             echo "Plugin $PLUGIN_NAME ($INSTALL_TYPE) installed successfully."
         done
     else
         echo "Installing plugin $ARG from $INSTALL_TYPE..."
 
-        # Determine plugin directory based on INSTALL_TYPE
         if [ "$INSTALL_TYPE" = "services" ]; then
             PLUGIN_DIR="services"
         elif [ "$INSTALL_TYPE" = "scripts" ]; then
             PLUGIN_DIR="scripts"
         fi
 
-        # Initialize sparse-checkout and set the plugin to install
         git sparse-checkout init --cone
         git sparse-checkout set "$PLUGIN_DIR/$ARG" && git checkout
-
         check_dir "$TEMP_DIR/$PLUGIN_DIR/$ARG"
         PLUGIN_NAME="$ARG"
         DEST_DIR="${PLUGIN_SERVICES_DIR}/$PLUGIN_NAME"
@@ -198,14 +188,76 @@ install_plugin() {
         check_dir "$TEMP_DIR/$PLUGIN_DIR/$ARG"
         mkdir -p "$DEST_DIR"
         cp -r "$TEMP_DIR/$PLUGIN_DIR/$ARG"/* "$DEST_DIR"
-        if [ "$INSTALL_TYPE" = "services" ]; then
-            add_plugin "$PLUGIN_NAME"
-        fi
         echo "Plugin $PLUGIN_NAME ($INSTALL_TYPE) installed successfully."
     fi
 
-    # Clean up temporary directory
     rm -rf "$TEMP_DIR"
+}
+
+
+remove() {
+    local ITEM_NAME="$1"
+    local PURGE=false
+    local REMOVE_TERMUX_SERVICE=false
+    local REMOVE_PLUGIN_SERVICE=false
+    local REMOVE_PLUGIN_SCRIPT=false
+
+    while getopts "sSr p" opt; do
+        case "$opt" in
+            s) REMOVE_TERMUX_SERVICE=true ;;
+            S) REMOVE_PLUGIN_SERVICE=true ;;
+            r) REMOVE_PLUGIN_SCRIPT=true ;;
+            p) PURGE=true ;;
+            *) 
+                error "Usage: tplug remove <item_name> [-s | -S | -r] [-p]"
+                exit 1
+                ;;
+        esac
+    done
+    shift $((OPTIND-1))
+
+    if [ -z "$ITEM_NAME" ]; then
+        error "Usage: tplug remove <item_name> [-s | -S | -r] [-p]"
+        exit 1
+    fi
+
+    if [ "$REMOVE_TERMUX_SERVICE" = true ] && [ "$REMOVE_PLUGIN_SERVICE" = true ]; then
+        error "You cannot specify both -s and -S together."
+        exit 1
+    fi
+    if [ "$REMOVE_TERMUX_SERVICE" = true ] && [ "$REMOVE_PLUGIN_SCRIPT" = true ]; then
+        error "You cannot specify both -s and -r together."
+        exit 1
+    fi
+    if [ "$REMOVE_PLUGIN_SERVICE" = true ] && [ "$REMOVE_PLUGIN_SCRIPT" = true ]; then
+        error "You cannot specify both -S and -r together."
+        exit 1
+    fi
+
+    if [ "$REMOVE_TERMUX_SERVICE" = true ]; then
+        check_dir "$SERVICE_DIR/termux/$ITEM_NAME"
+        echo "Removing termux-service $ITEM_NAME..."
+        [ -L "$SERVICE_DIR/termux/$ITEM_NAME/log/run" ] && unlink "$SERVICE_DIR/termux/$ITEM_NAME/log/run"
+        rm -rf "$SERVICE_DIR/termux/$ITEM_NAME"
+        if [ "$PURGE" = true ]; then
+            clear_logs "$ITEM_NAME"
+        fi
+        success "Termux service $ITEM_NAME removed successfully."
+    elif [ "$REMOVE_PLUGIN_SERVICE" = true ]; then
+        check_dir "$PLUGIN_SERVICES_DIR/$ITEM_NAME"
+        echo "Removing plugin-service $ITEM_NAME..."
+        [ -L "$PLUGIN_SERVICES_DIR/$ITEM_NAME/log/run" ] && unlink "$PLUGIN_SERVICES_DIR/$ITEM_NAME/log/run"
+        rm -rf "$PLUGIN_SERVICES_DIR/$ITEM_NAME"
+        success "Plugin service $ITEM_NAME removed successfully."
+    elif [ "$REMOVE_PLUGIN_SCRIPT" = true ]; then
+        check_dir "$PLUGIN_SCRIPTS_DIR/$ITEM_NAME"
+        echo "Removing plugin-script $ITEM_NAME..."
+        rm -rf "$PLUGIN_SCRIPTS_DIR/$ITEM_NAME"
+        success "Plugin script $ITEM_NAME removed successfully."
+    else
+        error "Usage: tplug remove <item_name> [-s | -S | -r] [-p]"
+        exit 1
+    fi
 }
 
 
