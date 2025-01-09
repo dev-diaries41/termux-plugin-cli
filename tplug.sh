@@ -362,13 +362,13 @@ run() {
     shift  
     local ADDITIONAL_PARAMS="$@" 
 
-    check_dir "$PLUGIN_SCRIPTS__DIR/$SCRIPT_NAME"
+    check_dir "$PLUGIN_SCRIPTS_DIR/$SCRIPT_NAME"
 
-    if [ ! -e "$PLUGIN_SCRIPTS__DIR/$SCRIPT_NAME/run" ]; then
-        echo "Script $PLUGIN_SCRIPTS__DIR/$SCRIPT_NAME/run not found."
+    if [ ! -e "$PLUGIN_SCRIPTS_DIR/$SCRIPT_NAME/run" ]; then
+        echo "Script $PLUGIN_SCRIPTS_DIR/$SCRIPT_NAME/run not found."
         exit 1
-    elif [ ! -x "$PLUGIN_SCRIPTS__DIR/$SCRIPT_NAME/run" ]; then
-        echo "Script $PLUGIN_SCRIPTS__DIR/$SCRIPT_NAME/run is not executable."
+    elif [ ! -x "$PLUGIN_SCRIPTS_DIR/$SCRIPT_NAME/run" ]; then
+        echo "Script $PLUGIN_SCRIPTS_DIR/$SCRIPT_NAME/run is not executable."
         exit 1
     fi
 

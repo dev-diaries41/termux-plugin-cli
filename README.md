@@ -169,4 +169,3 @@ When installing plugins from local directories, the tool will automatically read
 
 - **Permission errors**:  
   Ensure that you have appropriate permissions for installing plugins and accessing the required directories.
-
