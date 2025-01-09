@@ -18,6 +18,7 @@ success() { echo "${GREEN}$*${NC}"; }
 check_dir() {
     [ -d "$1" ] || { error "Error: Directory $1 does not exist."; exit 1; }
 }
+
 show_help() {
     echo "Usage: tplug <command> [options]"
     echo
@@ -39,12 +40,18 @@ show_help() {
     echo "    -a                         List available plugin-services or plugin-scripts from the repository."
     echo "                               Use '-a -S' for plugin-services or '-a -r' for plugin-scripts."
     echo "    'ls' or 'list' for listing."
-    echo "  remove <service_name> [-P]   Remove a termux-service."
-    echo "    -p                         Purge logs when removing the service."
-    echo "    'rm' or 'remove' for removing plugins."
+    echo "  remove <item_name> [-s | -S | -r] [-p]"
+    echo "                               Remove a termux-service, plugin-service, or plugin-script."
+    echo "                               <item_name>    Name of the service, plugin-service, or plugin-script to remove."
+    echo "                               -s             Remove a termux-service."
+    echo "                               -S             Remove a plugin-service."
+    echo "                               -r             Remove a plugin-script."
+    echo "                               -p             Purge logs when removing the service (only applicable to termux-services)."
+    echo "                               'rm' or 'remove'."
     echo "  --help                      Show this help message."
     echo
 }
+
 
 check_dependencies() {
     REQUIRED_COMMANDS="git"
@@ -112,9 +119,9 @@ add_service() {
 
 
 install_plugin() {
-    local ARG="$1"
-    local INSTALL_TYPE INSTALL_ALL=false PLUGIN_NAME DEST_DIR TEMP_DIR PLUGIN_DIR
+    local ARG INSTALL_TYPE INSTALL_ALL=false PLUGIN_NAME DEST_DIR TEMP_DIR PLUGIN_DIR
 
+    # Initialize options
     while getopts "sra" opt; do
         case $opt in
             s) INSTALL_TYPE="services" ;;
@@ -124,6 +131,11 @@ install_plugin() {
         esac
     done
 
+    # Handle the plugin name after options
+    shift $((OPTIND - 1))
+    ARG="$1"
+
+    # Validation for options
     if [ "$INSTALL_ALL" = true ] && [ -z "$INSTALL_TYPE" ]; then
         echo "Error: -a flag must be used with either -s (services) or -r (scripts)"
         exit 1
@@ -134,11 +146,12 @@ install_plugin() {
         exit 1
     fi
 
+    # Create a temporary directory for cloning the repository
     TEMP_DIR=$(mktemp -d)
 
     echo "Cloning repository..."
     git clone --filter=blob:none --no-checkout "$TERMUX_PLUGINS_REPO_URL" "$TEMP_DIR" || {
-        error "Failed to clone repository."
+        echo "Error: Failed to clone repository."
         exit 1
     }
     cd "$TEMP_DIR" || exit 1
@@ -159,17 +172,19 @@ install_plugin() {
             if [ "$INSTALL_TYPE" = "services" ]; then
                 add_service "$PLUGIN_NAME" 
             fi
-            success "Plugin $PLUGIN_NAME ($INSTALL_TYPE) installed successfully."
+            echo "Plugin $PLUGIN_NAME ($INSTALL_TYPE) installed successfully."
         done
     else
         echo "Installing plugin $ARG from $INSTALL_TYPE..."
 
+        # Determine plugin directory based on INSTALL_TYPE
         if [ "$INSTALL_TYPE" = "services" ]; then
             PLUGIN_DIR="services"
         elif [ "$INSTALL_TYPE" = "scripts" ]; then
             PLUGIN_DIR="scripts"
         fi
 
+        # Initialize sparse-checkout and set the plugin to install
         git sparse-checkout init --cone
         git sparse-checkout set "$PLUGIN_DIR/$ARG" && git checkout
 
@@ -186,11 +201,13 @@ install_plugin() {
         if [ "$INSTALL_TYPE" = "services" ]; then
             add_plugin "$PLUGIN_NAME"
         fi
-        success "Plugin $PLUGIN_NAME ($INSTALL_TYPE) installed successfully."
+        echo "Plugin $PLUGIN_NAME ($INSTALL_TYPE) installed successfully."
     fi
 
+    # Clean up temporary directory
     rm -rf "$TEMP_DIR"
 }
+
 
 
 list() {
@@ -251,40 +268,6 @@ clear_logs() {
         error "No logs found for service: $1"
     fi
 }
-
-show_help() {
-    echo "Usage: tplug <command> [options]"
-    echo
-    echo "Commands:"
-    echo "  add <plugin_name>            Create a new termux-service by adding a plugin-service from a local directory."
-    echo "  run <script_name> [args]     Run plugin-scripts from a local directory."
-    echo "  install [<name> | -a] [-s | -r]"
-    echo "                               Install plugin-services or plugin-scripts from the repository."
-    echo "                               <name>         Install a specific plugin-service or plugin-script."
-    echo "                               -a             Install all plugins (requires -s or -r)."
-    echo "                               -s             Install plugin-services."
-    echo "                               -r             Install plugin-scripts."
-    echo "                               'i' or 'install' for installing plugins."
-    echo "  logs [-c] <service_name>     View current logs for a termux-service. Use [-c] to clear logs."
-    echo "  list [-S | -s | -r | -a]     List items (plugin-services, plugin-scripts, termux-services, or available plugin-services/scripts in repo)."
-    echo "    -S                         List installed plugin-services."
-    echo "    -s                         List installed termux-services."
-    echo "    -r                         List installed plugin-scripts."
-    echo "    -a                         List available plugin-services or plugin-scripts from the repository."
-    echo "                               Use '-a -S' for plugin-services or '-a -r' for plugin-scripts."
-    echo "    'ls' or 'list' for listing."
-    echo "  remove <item_name> [-s | -S | -r] [-p]"
-    echo "                               Remove a termux-service, plugin-service, or plugin-script."
-    echo "                               <item_name>    Name of the service, plugin-service, or plugin-script to remove."
-    echo "                               -s             Remove a termux-service."
-    echo "                               -S             Remove a plugin-service."
-    echo "                               -r             Remove a plugin-script."
-    echo "                               -p             Purge logs when removing the service (only applicable to termux-services)."
-    echo "                               'rm' or 'remove'."
-    echo "  --help                      Show this help message."
-    echo
-}
-
 
 logs() {
     local CLEAR=false
