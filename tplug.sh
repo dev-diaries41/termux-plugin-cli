@@ -196,7 +196,7 @@ install_plugin() {
 
 
 remove() {
-    local ITEM_NAME="$1"
+    local ITEM_NAME
     local PURGE=false
     local REMOVE_TERMUX_SERVICE=false
     local REMOVE_PLUGIN_SERVICE=false
@@ -215,6 +215,8 @@ remove() {
         esac
     done
     shift $((OPTIND-1))
+    ITEM_NAME="$1"
+
 
     if [ -z "$ITEM_NAME" ]; then
         error "Usage: tplug remove <item_name> [-s | -S | -r] [-p]"
