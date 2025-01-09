@@ -237,10 +237,10 @@ remove() {
     fi
 
     if [ "$REMOVE_TERMUX_SERVICE" = true ]; then
-        check_dir "$SERVICE_DIR/termux/$ITEM_NAME"
+        check_dir "$SERVICE_DIR/$ITEM_NAME"
         echo "Removing termux-service $ITEM_NAME..."
-        [ -L "$SERVICE_DIR/termux/$ITEM_NAME/log/run" ] && unlink "$SERVICE_DIR/termux/$ITEM_NAME/log/run"
-        rm -rf "$SERVICE_DIR/termux/$ITEM_NAME"
+        [ -L "$SERVICE_DIR/$ITEM_NAME/log/run" ] && unlink "$SERVICE_DIR/$ITEM_NAME/log/run"
+        rm -rf "$SERVICE_DIR/$ITEM_NAME"
         if [ "$PURGE" = true ]; then
             clear_logs "$ITEM_NAME"
         fi
