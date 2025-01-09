@@ -1,14 +1,15 @@
 # tplug - Termux Plugin Manager
 
-`tplug` is a command-line tool designed to simplify and organise the management **termux-services** and **custom scripts**, simplifying the process of adding, installing (from remote repositories), removing, and managing these services, as well as running and removing custom scripts in Termux. The tool ensures seamless integration with Termux’s service management system and provides additional functionality for executing local scripts.
+`tplug` is a command-line tool designed to simplify and organize the management of **termux-services** and **custom scripts**, simplifying the process of adding, installing (from remote repositories), removing, and managing these services, as well as running and removing custom scripts in Termux. The tool ensures seamless integration with Termux’s service management system and provides additional functionality for executing local scripts.
 
 The tool allows you to:
 
-- Create new **termux-services** by adding **plugin-services** from a local directory or installing from repo
+- Install plugins from the repository from [Termux Plugin Repository](https://github.com/dev-diaries41/termux-plugins.git). You can override with ENV, see [Environment Variables](#environment-variables)
+- Create new **termux-services** by adding **plugin-services** from a local directory or installing from a repository.
 - List and remove **plugins** and **termux-services**.
 - View logs for **termux-services**.
 - Run **plugin-scripts** from a local directory.
-- Customize **plugin** github repositories through an environment variable.
+- Customize **plugin** GitHub repositories through an environment variable.
 
 ---
 
@@ -58,8 +59,9 @@ You can download and use `tplug` by following these steps:
 
 2. Move it to a directory included in your `PATH` (e.g., `/usr/bin/`) and make it executable.
    ```bash
-   cp termux-plugin-cli/tplug.sh ~/../usr/bin/tplug && chmod 755  ~/../usr/bin/tplug
+   cp termux-plugin-cli/tplug.sh ~/../usr/bin/tplug && chmod 755 ~/../usr/bin/tplug
    ```
+
 ---
 
 ## Usage
@@ -73,62 +75,80 @@ tplug <command> [options]
 ### Commands
 
 1. **`add <plugin_name>`**  
-   Add a plugin from the local directory.
+   Create a new termux-service by adding a plugin-service from a local directory.
    ```bash
    tplug add <plugin_name>
    ```
 
-2. **`install [--all | <name>]`**  
-   Install plugins from the repository. Use `--all` to install all plugins or specify a plugin name.
+2. **`run <script_name> [args]`**  
+   Run plugin-scripts from a local directory. For security, scripts must be made executable instead of being sourced.  
+   Example:
    ```bash
-   tplug install --all
-   tplug install <plugin_name>
+   tplug run <script_name> [args]
+   ```
+   Here, `<script_name>` refers to the name of the directory in the scripts directory that has the corresponding `run` file (e.g., `~/.plugins/scripts/myscript/run`).
+
+3. **`install [<name> | -a] [-s | -r]`**  
+   Install plugin-services or plugin-scripts from the repository.
+   - `<name>`: Install a specific plugin-service or plugin-script.
+   - `-a`: Install all plugins (requires `-s` or `-r`).
+   - `-s`: Install plugin-services.
+   - `-r`: Install plugin-scripts.
+
+   Examples:
+   ```bash
+   tplug install my-plugin
+   tplug install -a -s
    ```
 
-3. **`logs [-c] <service_name>`**  
-   View logs for a service. Use the `-c` flag to clear the logs.
+4. **`logs [-c] <service_name>`**  
+   View logs for a termux-service. Use the `-c` flag to clear logs.
    ```bash
    tplug logs <service_name>
    tplug logs -c <service_name>
    ```
 
-4. **`list [-p | -s | -a]`**  
-   List installed items (plugins, services) or available plugins from the repository.
-   - `-p`: List installed plugins.
-   - `-s`: List installed services.
-   - `-a`: List available plugins in the repository.
+5. **`list [-S | -s | -r | -a]`**  
+   List items (plugin-services, plugin-scripts, termux-services, or available plugin-services/scripts in the repository).
+   - `-S`: List installed plugin-services.
+   - `-s`: List installed termux-services.
+   - `-r`: List installed plugin-scripts.
+   - `-a`: List available plugin-services or plugin-scripts in the repository.
+
+   Use `-a -S` for plugin-services or `-a -r` for plugin-scripts.
+
+   Examples:
    ```bash
-   tplug list -p
-   tplug list -s
-   tplug list -a
+   tplug list -S
+   tplug list -a -r
    ```
 
-5. **`remove <item_name> [-s | -p] [-P]`**  
-   Remove a service or plugin. Use `-s` to remove a service, `-p` to remove a plugin, and `-P` to purge logs when removing a service.
+6. **`remove <item_name> [-s | -S | -r] [-p]`**  
+   Remove a termux-service, plugin-service, or plugin-script.
+   - `<item_name>`: Name of the service, plugin-service, or plugin-script to remove.
+   - `-s`: Remove a termux-service.
+   - `-S`: Remove a plugin-service.
+   - `-r`: Remove a plugin-script.
+   - `-p`: Purge logs when removing the service (only applicable to termux-services).
+
+   Examples:
    ```bash
-   tplug remove <item_name> -s
-   tplug remove <item_name> -p
-   tplug remove <item_name> -s -P
+   tplug remove my-service -s
+   tplug remove my-plugin -S
+   tplug remove my-script -r
    ```
 
-6. **`--help`**  
-   Show the help message and usage details.
+7. **`--help`**  
+   Show the help message.
    ```bash
    tplug --help
    ```
-
-7. **`run <script_name> [args]`**  
-   Run scripts from a local directory. For security rather than sourcing, the scripts must be made executable. 
-   ```bash
-   tplug run <script_name> [args]
-   ```
-   "myscript" refers to the name of the directory in the scripts directory that has the correspinding run file e.g ~/.scripts/myscript/run
 
 ### Environment Variables
 
 - **`TERMUX_PLUGINS_REPO_URL`**:  
   You can override the default plugin repository URL by setting this environment variable to the desired URL.
-  
+
   Example:
   ```bash
   export TERMUX_PLUGINS_REPO_URL="https://github.com/your/custom-repo.git"
@@ -144,10 +164,9 @@ When installing plugins from local directories, the tool will automatically read
 
 ## Troubleshooting
 
-- **Missing `plugin.yml` file**:  
-  If the plugin doesn't contain a `plugin.yml` file with dependencies, the tool will skip dependency installation.
-  
+- **Missing `plugin.txt` file**:  
+  If the plugin doesn't contain a `plugin.txt` file with dependencies, the tool will skip dependency installation.
+
 - **Permission errors**:  
   Ensure that you have appropriate permissions for installing plugins and accessing the required directories.
 
----

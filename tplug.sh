@@ -165,7 +165,7 @@ install_plugin() {
             check_dir "$PLUGIN"
             mkdir -p "$DEST_DIR"
             cp -r "$PLUGIN"/* "$DEST_DIR"
-            echo "Plugin $PLUGIN_NAME ($INSTALL_TYPE) installed successfully."
+            success "Plugin $PLUGIN_NAME ($INSTALL_TYPE) installed successfully."
         done
     else
         echo "Installing plugin $ARG from $INSTALL_TYPE..."
@@ -188,7 +188,7 @@ install_plugin() {
         check_dir "$TEMP_DIR/$PLUGIN_DIR/$ARG"
         mkdir -p "$DEST_DIR"
         cp -r "$TEMP_DIR/$PLUGIN_DIR/$ARG"/* "$DEST_DIR"
-        echo "Plugin $PLUGIN_NAME ($INSTALL_TYPE) installed successfully."
+        success "Plugin $PLUGIN_NAME ($INSTALL_TYPE) installed successfully."
     fi
 
     rm -rf "$TEMP_DIR"
@@ -272,7 +272,7 @@ list() {
         -a) 
             if [ -z "$2" ]; then
                 echo "Error: -a flag must be used with either -s (services) or -r (scripts)"
-                echo "Usage: list -a -s for all plugin services or list -a -r for all plugin scripts"
+                echo "Usage: list -a -s for available plugin services or list -a -r for available plugin scripts"
                 exit 1
             fi
             TEMP_DIR=$(mktemp -d)
