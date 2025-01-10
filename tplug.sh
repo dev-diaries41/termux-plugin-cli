@@ -364,11 +364,15 @@ run() {
 
     check_dir "$PLUGIN_SCRIPTS_DIR/$SCRIPT_NAME"
 
-    if [ ! -e "$PLUGIN_SCRIPTS_DIR/$SCRIPT_NAME/run" ]; then
-        echo "Script $PLUGIN_SCRIPTS_DIR/$SCRIPT_NAME/run not found."
-        exit 1
-    elif [ ! -x "$PLUGIN_SCRIPTS_DIR/$SCRIPT_NAME/run" ]; then
-        echo "Script $PLUGIN_SCRIPTS_DIR/$SCRIPT_NAME/run is not executable."
+    # Check if the file exists
+    if [ -f "$PLUGIN_SCRIPTS_DIR/$SCRIPT_NAME/run" ]; then
+        if [ -x "$PLUGIN_SCRIPTS_DIR/$SCRIPT_NAME/run" ]; then
+        else
+            error "Script $PLUGIN_SCRIPTS_DIR/$SCRIPT_NAME/run is not executable."
+            exit 1
+        fi
+    else
+        error "Script $PLUGIN_SCRIPTS_DIR/$SCRIPT_NAME/run not found."
         exit 1
     fi
 
