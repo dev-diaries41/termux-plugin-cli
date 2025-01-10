@@ -91,10 +91,6 @@ add_service() {
 
     # Enforce plugin-service file structure
     if [ -d "$PLUGIN_DIR/plugin" ]; then
-        if [ ! -f "$PLUGIN_DIR/plugin/run.py" ] && [ ! -f "$PLUGIN_DIR/plugin/run.sh" ] && [ ! -f "$PLUGIN_DIR/plugin/run.ts" ] && [ ! -f "$PLUGIN_DIR/plugin/run.js" ]; then
-            error "'run.py', 'run.sh', 'run.ts', or 'run.js' is missing in $PLUGIN_DIR/plugin."; exit 1;
-        fi
-
         mkdir -p "$SERVICE_DIR/$SERVICE_NAME/plugin"
         cp -r "$PLUGIN_DIR/plugin/"* "$SERVICE_DIR/$SERVICE_NAME/plugin/"
 
