@@ -356,7 +356,6 @@ logs() {
         error "Log file for service $SERVICE_NAME does not exist."
     fi
 }
-
 run() {
     local SCRIPT_NAME="$1"
     shift  
@@ -364,19 +363,17 @@ run() {
 
     check_dir "$PLUGIN_SCRIPTS_DIR/$SCRIPT_NAME"
 
-    # Check if the file exists
     if [ -f "$PLUGIN_SCRIPTS_DIR/$SCRIPT_NAME/run" ]; then
         if [ -x "$PLUGIN_SCRIPTS_DIR/$SCRIPT_NAME/run" ]; then
+            "$PLUGIN_SCRIPTS_DIR/$SCRIPT_NAME/run" $ADDITIONAL_PARAMS
         else
-            error "Script $PLUGIN_SCRIPTS_DIR/$SCRIPT_NAME/run is not executable."
+            errpr "Script $PLUGIN_SCRIPTS_DIR/$SCRIPT_NAME/run is not executable."
             exit 1
         fi
     else
         error "Script $PLUGIN_SCRIPTS_DIR/$SCRIPT_NAME/run not found."
         exit 1
     fi
-
-    "$PLUGIN_SCRIPTS__DIR/$SCRIPT_NAME/run" $ADDITIONAL_PARAMS
 }
 
 
