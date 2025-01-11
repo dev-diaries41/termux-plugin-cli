@@ -158,7 +158,7 @@ tplug <command> [options]
 
 ## Dependencies
 
-When installing plugins from local directories, the tool will automatically read the `plugin.yml` file and install any listed dependencies.
+When installing plugins from local directories, the tool will automatically read the `plugin.txt` file and install any listed dependencies.
 
 ---
 
