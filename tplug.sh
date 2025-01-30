@@ -100,12 +100,12 @@ add_service() {
         fi
 
         # Check for package.json in plugin or plugin/src and run npm install if found
-        if [ -f "$PLUGIN_DIR/plugin/package.json" ]; then
+        if [ -f "$SERVICE_DIR/$SERVICE_NAME/plugin/package.json" ]; then
             echo "Found package.json in plugin directory. Running 'npm install'..."
-            (cd "$PLUGIN_DIR/plugin" && npm install) || { echo "Failed to install npm dependencies"; exit 1; }
-        elif [ -f "$PLUGIN_DIR/plugin/src/package.json" ]; then
+            (cd "$SERVICE_DIR/$SERVICE_NAME/plugin" && npm install) || { echo "Failed to install npm dependencies"; exit 1; }
+        elif [ -f "$SERVICE_DIR/$SERVICE_NAME/plugin/src/package.json" ]; then
             echo "Found package.json in plugin/src directory. Running 'npm install'..."
-            (cd "$PLUGIN_DIR/plugin/src" && npm install) || { echo "Failed to install npm dependencies"; exit 1; }
+            (cd "$SERVICE_DIR/$SERVICE_NAME/plugin/src" && npm install) || { echo "Failed to install npm dependencies"; exit 1; }
         fi
     fi
 
